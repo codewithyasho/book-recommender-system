@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}Popular Books - Book Recommender System{% endblock %}
+
+{% block head %}
+<meta name="description" content="Discover the top 100 most popular books with highest ratings. Find your next great read from our curated collection.">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="row justify-content-center text-center mb-5" style="margin-top: 100px;">
+        <div class="col-lg-10">
+            <h1 class="page-title">
+                <i class="fas fa-star me-3"></i>
+                Popular 100 Books To Read
+            </h1>
+            <p class="subtitle">
+                Discover the most beloved books with highest ratings and reader engagement.
+                <br>Each book has been rated by at least 250 readers.
+            </p>
+        </div>
+    </div>
+
+    <!-- Statistics Section -->
+    <div class="row mb-5">
+        <div class="col-md-4 text-center mb-3">
+            <div class="stats-card">
+                <div class="stats-number">{{ books|length }}</div>
+                <div class="stats-label">Popular Books</div>
+            </div>
+        </div>
+        <div class="col-md-4 text-center mb-3">
+            <div class="stats-card">
+                <div class="stats-number">250+</div>
+                <div class="stats-label">Min Ratings Each</div>
+            </div>
+        </div>
+        <div class="col-md-4 text-center mb-3">
+            <div class="stats-card">
+                <div class="stats-number">⭐ 4.5+</div>
+                <div class="stats-label">Average Rating</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter and Sort Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="filter-section">
+                <label for="sortSelect" class="form-label text-white">
+                    <i class="fas fa-sort me-2"></i>Sort by:
+                </label>
+                <select id="sortSelect" class="form-select" style="background: rgba(255,255,255,0.1); border-color: var(--primary-purple); color: white;">
+                    <option value="rating">Highest Rating</option>
+                    <option value="popularity">Most Popular</option>
+                    <option value="year">Newest First</option>
+                    <option value="title">Title A-Z</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="filter-section">
+                <label for="searchFilter" class="form-label text-white">
+                    <i class="fas fa-search me-2"></i>Quick Search:
+                </label>
+                <input type="text" id="searchFilter" class="form-control" 
+                       placeholder="Search books, authors..." 
+                       style="background: rgba(255,255,255,0.1); border-color: var(--primary-purple); color: white;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Books Grid -->
+    <div class="row" id="booksContainer">
+        {% for book in books %}
+        <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 col-12 mb-4 book-item" 
+             data-title="{{ book.title|lower }}" 
+             data-author="{{ book.author|lower }}" 
+             data-year="{{ book.year }}" 
+             data-rating="{{ book.avg_rating }}" 
+             data-popularity="{{ book.num_ratings }}">
+            <div class="book-card h-100">
+                <div class="book-rank">
+                    <span class="rank-number">#{{ loop.index }}</span>
+                </div>
+                
+                <img src="{{ book.image if book.image and book.image != 'N/A' else 'https://via.placeholder.com/300x400/6a4c93/ffffff?text=' + book.title[:20] }}" 
+                     alt="{{ book.title }}" 
+                     class="book-image" 
+                     loading="lazy"
+                     onerror="this.src='https://via.placeholder.com/300x400/6a4c93/ffffff?text=No+Image'">
+                
+                <div class="book-details">
+                    <h5 class="book-title" title="{{ book.title }}">{{ book.title }}</h5>
+                    <p class="book-author">
+                        <i class="fas fa-user-edit me-1"></i>{{ book.author }}
+                    </p>
+                    <p class="book-year">
+                        <i class="fas fa-calendar-alt me-1"></i>{{ book.year }}
+                    </p>
+                    
+                    <div class="book-stats">
+                        <span class="rating" title="Average Rating">
+                            <i class="fas fa-star me-1"></i>{{ "%.2f"|format(book.avg_rating) }}
+                        </span>
+                        <span class="num-ratings" title="Number of Ratings">
+                            <i class="fas fa-users me-1"></i>{{ "{:,}".format(book.num_ratings) }} ratings
+                        </span>
+                    </div>
+                    
+                    <div class="book-actions mt-3">
+                        <button class="btn btn-sm btn-outline-light recommend-btn" 
+                                data-book-title="{{ book.title }}"
+                                title="Get recommendations based on this book">
+                            <i class="fas fa-magic me-1"></i>Find Similar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Load More Button -->
+    <div class="text-center mt-5" id="loadMoreSection" style="display: none;">
+        <button id="loadMoreBtn" class="btn btn-lg search-btn">
+            <i class="fas fa-plus me-2"></i>Load More Books
+        </button>
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" class="text-center mt-5" style="display: none;">
+        <div class="alert alert-custom alert-info">
+            <h4><i class="fas fa-search me-2"></i>No books found</h4>
+            <p>Try adjusting your search terms or filters.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Recommendation Modal -->
+<div class="modal fade" id="quickRecommendModal" tabindex="-1" aria-labelledby="quickRecommendModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: var(--black); border: 2px solid var(--primary-purple);">
+            <div class="modal-header" style="border-color: var(--primary-purple);">
+                <h5 class="modal-title text-white" id="quickRecommendModalLabel">
+                    <i class="fas fa-magic me-2"></i>Quick Recommendations
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="quickRecommendContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(106, 76, 147, 0.3);
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--light-purple);
+    margin-bottom: 0.5rem;
+}
+
+.stats-label {
+    color: var(--white);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.filter-section {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.filter-section .form-control:focus,
+.filter-section .form-select:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 15px rgba(106, 76, 147, 0.3);
+    color: white;
+}
+
+.filter-section .form-select option {
+    background: white;
+    color: black !important;
+}
+
+.filter-section .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.book-rank {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    background: linear-gradient(45deg, var(--primary-purple), var(--accent-purple));
+    color: white;
+    border-radius: 20px;
+    padding: 0.3rem 0.8rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.book-actions .btn {
+    transition: all 0.3s ease;
+}
+
+.book-actions .btn:hover {
+    background: var(--primary-purple);
+    border-color: var(--primary-purple);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(106, 76, 147, 0.4);
+}
+
+@media (max-width: 768px) {
+    .stats-number {
+        font-size: 2rem;
+    }
+    
+    .filter-section {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const booksContainer = document.getElementById('booksContainer');
+    const sortSelect = document.getElementById('sortSelect');
+    const searchFilter = document.getElementById('searchFilter');
+    const noResults = document.getElementById('noResults');
+    const loadMoreSection = document.getElementById('loadMoreSection');
+    const quickRecommendModal = new bootstrap.Modal(document.getElementById('quickRecommendModal'));
+    
+    let allBooks = Array.from(document.querySelectorAll('.book-item'));
+    let visibleBooks = allBooks.slice(0, 20); // Show first 20 books initially
+    
+    // Initial display
+    updateDisplay();
+    
+    // Sort functionality
+    sortSelect.addEventListener('change', function() {
+        const sortBy = this.value;
+        allBooks.sort((a, b) => {
+            switch(sortBy) {
+                case 'rating':
+                    return parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating);
+                case 'popularity':
+                    return parseInt(b.dataset.popularity) - parseInt(a.dataset.popularity);
+                case 'year':
+                    return parseInt(b.dataset.year) - parseInt(a.dataset.year);
+                case 'title':
+                    return a.dataset.title.localeCompare(b.dataset.title);
+                default:
+                    return 0;
+            }
+        });
+        updateDisplay();
+    });
+    
+    // Search functionality
+    searchFilter.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filteredBooks = allBooks.filter(book => 
+            book.dataset.title.includes(searchTerm) || 
+            book.dataset.author.includes(searchTerm)
+        );
+        
+        if (filteredBooks.length === 0) {
+            noResults.style.display = 'block';
+            booksContainer.innerHTML = '';
+            loadMoreSection.style.display = 'none';
+        } else {
+            noResults.style.display = 'none';
+            displayBooks(filteredBooks.slice(0, 20));
+            visibleBooks = filteredBooks.slice(0, 20);
+            allBooks = filteredBooks;
+            updateLoadMoreButton();
+        }
+    });
+    
+    // Load more functionality
+    document.getElementById('loadMoreBtn').addEventListener('click', function() {
+        const currentCount = visibleBooks.length;
+        const nextBooks = allBooks.slice(currentCount, currentCount + 20);
+        
+        nextBooks.forEach(book => {
+            booksContainer.appendChild(book);
+            visibleBooks.push(book);
+        });
+        
+        updateLoadMoreButton();
+        
+        // Animate new books
+        nextBooks.forEach((book, index) => {
+            setTimeout(() => {
+                book.style.opacity = '1';
+                book.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+    
+    // Quick recommendation functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.recommend-btn')) {
+            const bookTitle = e.target.closest('.recommend-btn').dataset.bookTitle;
+            showQuickRecommendations(bookTitle);
+        }
+    });
+    
+    function updateDisplay() {
+        visibleBooks = allBooks.slice(0, 20);
+        displayBooks(visibleBooks);
+        updateLoadMoreButton();
+    }
+    
+    function displayBooks(books) {
+        booksContainer.innerHTML = '';
+        books.forEach(book => {
+            book.style.opacity = '0';
+            book.style.transform = 'translateY(30px)';
+            booksContainer.appendChild(book);
+        });
+        
+        // Animate books
+        books.forEach((book, index) => {
+            setTimeout(() => {
+                book.style.opacity = '1';
+                book.style.transform = 'translateY(0)';
+            }, index * 50);
+        });
+    }
+    
+    function updateLoadMoreButton() {
+        if (visibleBooks.length < allBooks.length) {
+            loadMoreSection.style.display = 'block';
+        } else {
+            loadMoreSection.style.display = 'none';
+        }
+    }
+    
+    async function showQuickRecommendations(bookTitle) {
+        const modalContent = document.getElementById('quickRecommendContent');
+        modalContent.innerHTML = `
+            <div class="text-center">
+                <div class="spinner"></div>
+                <p>Finding recommendations for "${bookTitle}"...</p>
+            </div>
+        `;
+        
+        quickRecommendModal.show();
+        
+        try {
+            const response = await fetch('/get_recommendations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ book_name: bookTitle })
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                modalContent.innerHTML = `
+                    <div class="alert alert-custom alert-error">
+                        <h5>No recommendations found</h5>
+                        <p>${data.error}</p>
+                        <a href="/recommend" class="btn search-btn mt-2">
+                            Try Advanced Search
+                        </a>
+                    </div>
+                `;
+            } else {
+                const recommendationsHtml = data.recommendations.map(book => `
+                    <div class="col-md-6 mb-3">
+                        <div class="book-card h-100">
+                            <img src="${book.image}" alt="${book.title}" class="book-image" style="height: 200px;">
+                            <div class="book-details">
+                                <h6 class="book-title">${book.title}</h6>
+                                <p class="book-author small">${book.author}</p>
+                                <p class="book-year small">${book.year}</p>
+                                <span class="rating small">${book.similarity}% Match</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                modalContent.innerHTML = `
+                    <div class="row">
+                        ${recommendationsHtml}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="/recommend" class="btn search-btn">
+                            Get More Recommendations
+                        </a>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            modalContent.innerHTML = `
+                <div class="alert alert-custom alert-error">
+                    <h5>Error</h5>
+                    <p>Failed to load recommendations. Please try again.</p>
+                </div>
+            `;
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}Get Recommendations - Book Recommender System{% endblock %}
+
+{% block head %}
+<meta name="description" content="Get personalized book recommendations based on your favorite books. Enter a book title and discover similar books you'll love.">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="row justify-content-center" style="margin-top: 100px;">
+        <div class="col-lg-10">
+            <div class="search-section">
+                <h1 class="search-title">
+                    <i class="fas fa-magic me-3"></i>
+                    Find Your Next Great Read
+                </h1>
+                <p class="search-subtitle">
+                    Enter the name of a book you loved, and we'll recommend similar books that match your taste.
+                    <br>Our AI analyzes reading patterns from thousands of book lovers to find your perfect match.
+                </p>
+                
+                <!-- Search Form -->
+                <form id="recommendForm" onsubmit="return false;">
+                    <div class="autocomplete-container">
+                        <div class="input-group mb-3">
+                            <input type="text" 
+                                   id="bookSearch" 
+                                   class="form-control search-input" 
+                                   placeholder="Enter a book title (e.g., 'The Great Gatsby', 'Harry Potter')..."
+                                   required
+                                   autocomplete="off">
+                            <div id="suggestions" class="autocomplete-suggestions" style="display: none;"></div>
+                        </div>
+                        
+                        <button type="submit" id="searchBtn" class="search-btn">
+                            <i class="fas fa-search me-2"></i>Get Recommendations
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Quick Examples -->
+                <div class="mt-4">
+                    <p class="mb-2" style="color: var(--light-purple); font-weight: 500;">
+                        <i class="fas fa-lightbulb me-2"></i>Try these popular books:
+                    </p>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <button class="btn btn-outline-light btn-sm example-btn" data-book="harry potter">
+                            Harry Potter
+                        </button>
+                        <button class="btn btn-outline-light btn-sm example-btn" data-book="to kill a mockingbird">
+                            To Kill a Mockingbird
+                        </button>
+                        <button class="btn btn-outline-light btn-sm example-btn" data-book="the lord of the rings">
+                            Lord of the Rings
+                        </button>
+                        <button class="btn btn-outline-light btn-sm example-btn" data-book="pride and prejudice">
+                            Pride and Prejudice
+                        </button>
+                        <button class="btn btn-outline-light btn-sm example-btn" data-book="1984">
+                            1984
+                        </button>
+                        <button class="btn btn-outline-light btn-sm example-btn" data-book="the catcher in the rye">
+                            The Catcher in the Rye
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="row">
+        <div class="col-12">
+            <div id="recommendationsResults">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Categories Section -->
+    <div class="row justify-content-center mt-5">
+        <div class="col-lg-10">
+            <div class="featured-categories">
+                <h3 class="text-center mb-4" style="color: var(--light-purple);">
+                    <i class="fas fa-tags me-2"></i>Explore by Genre
+                </h3>
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="category-card" data-category="fiction">
+                            <i class="fas fa-feather-alt"></i>
+                            <h6>Fiction</h6>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="category-card" data-category="mystery">
+                            <i class="fas fa-search"></i>
+                            <h6>Mystery</h6>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="category-card" data-category="romance">
+                            <i class="fas fa-heart"></i>
+                            <h6>Romance</h6>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="category-card" data-category="fantasy">
+                            <i class="fas fa-dragon"></i>
+                            <h6>Fantasy</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('index') }}" class="btn search-btn">
+                        <i class="fas fa-list me-2"></i>Browse All Popular Books
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.how-it-works {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 3rem 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.step-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 2rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.step-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(106, 76, 147, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.step-icon {
+    font-size: 3rem;
+    color: var(--primary-purple);
+    margin-bottom: 1.5rem;
+}
+
+.step-card h5 {
+    color: var(--white);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.step-card p {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.example-btn {
+    border-color: var(--primary-purple);
+    color: var(--light-purple);
+    transition: all 0.3s ease;
+    margin: 0.2rem;
+}
+
+.example-btn:hover {
+    background: var(--primary-purple);
+    border-color: var(--primary-purple);
+    color: var(--white);
+    transform: translateY(-2px);
+}
+
+.featured-categories {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 3rem 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.category-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 2rem 1rem;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    height: 100%;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(106, 76, 147, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-purple);
+}
+
+.category-card i {
+    font-size: 2.5rem;
+    color: var(--primary-purple);
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.category-card h6 {
+    color: var(--white);
+    font-weight: 600;
+    margin: 0;
+}
+
+.recommendation-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.4s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    height: 100%;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(106, 76, 147, 0.4);
+    border-color: var(--primary-purple);
+}
+
+.similarity-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: linear-gradient(45deg, var(--primary-purple), var(--accent-purple));
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+    .search-section {
+        padding: 2rem 1.5rem;
+    }
+    
+    .how-it-works,
+    .featured-categories {
+        padding: 2rem 1.5rem;
+    }
+    
+    .step-card,
+    .category-card {
+        margin-bottom: 1rem;
+    }
+    
+    .example-btn {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Example button functionality
+    document.querySelectorAll('.example-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const bookName = this.dataset.book;
+            document.getElementById('bookSearch').value = bookName;
+            
+            // Add visual feedback
+            this.classList.add('active');
+            setTimeout(() => this.classList.remove('active'), 200);
+        });
+    });
+    
+    // Category card clicks
+    document.querySelectorAll('.category-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const category = this.dataset.category;
+            // You could implement category-based search here
+            console.log('Category clicked:', category);
+            
+            // Add visual feedback
+            this.style.transform = 'translateY(-5px) scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'translateY(-5px)';
+            }, 150);
+        });
+    });
+    
+    // Add sparkle effect to search button
+    const searchBtn = document.getElementById('searchBtn');
+    searchBtn.addEventListener('mouseenter', function() {
+        this.innerHTML = '<i class="fas fa-magic me-2"></i>✨ Get Recommendations ✨';
+    });
+    
+    searchBtn.addEventListener('mouseleave', function() {
+        this.innerHTML = '<i class="fas fa-search me-2"></i>Get Recommendations';
+    });
+    
+    // Auto-focus on search input
+    document.getElementById('bookSearch').focus();
+    
+    // Add typing effect to placeholder
+    const searchInput = document.getElementById('bookSearch');
+    const placeholders = [
+        "Enter a book title (e.g., 'The Great Gatsby')...",
+        "Try 'Harry Potter and the Sorcerer's Stone'...",
+        "How about 'Pride and Prejudice'?...",
+        "Maybe 'The Lord of the Rings'?...",
+        "What about 'To Kill a Mockingbird'?..."
+    ];
+    
+    let currentPlaceholder = 0;
+    
+    function rotatePlaceholder() {
+        searchInput.placeholder = placeholders[currentPlaceholder];
+        currentPlaceholder = (currentPlaceholder + 1) % placeholders.length;
+    }
+    
+    // Rotate placeholder every 3 seconds when input is empty
+    setInterval(() => {
+        if (searchInput.value === '') {
+            rotatePlaceholder();
+        }
+    }, 3000);
+    
+    // Enhanced result display with animations
+    const originalDisplayRecommendations = window.displayRecommendations;
+    if (typeof originalDisplayRecommendations === 'function') {
+        window.displayRecommendations = function(recommendations) {
+            if (recommendations.length === 0) {
+                document.getElementById('recommendationsResults').innerHTML = `
+                    <div class="alert alert-custom alert-info text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-book-open" style="font-size: 3rem; color: var(--primary-purple);"></i>
+                        </div>
+                        <h4>No recommendations found</h4>
+                        <p>Sorry, we couldn't find any recommendations for this book. Try another title!</p>
+                        <div class="mt-3">
+                            <button class="btn search-btn" onclick="document.getElementById('bookSearch').focus()">
+                                <i class="fas fa-search me-2"></i>Try Another Book
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const recommendationsHtml = `
+                <div class="text-center mb-4">
+                    <h2 style="color: var(--light-purple);">
+                        <i class="fas fa-magic me-2"></i>Perfect Matches for You!
+                    </h2>
+                    <p style="color: rgba(255,255,255,0.8);">
+                        Based on reading patterns from book lovers with similar taste
+                    </p>
+                </div>
+                
+                <div class="row">
+                    ${recommendations.map((book, index) => `
+                        <div class="col-lg-4 col-md-6 col-sm-6 mb-4">
+                            <div class="book-card h-100 recommendation-card" style="animation-delay: ${index * 0.1}s;">
+                                <div class="similarity-badge">
+                                    ${book.similarity}% Match
+                                </div>
+                                
+                                <img src="${book.image}" 
+                                     alt="${book.title}" 
+                                     class="book-image" 
+                                     loading="lazy"
+                                     style="height: 300px;"
+                                     onerror="this.src='https://via.placeholder.com/300x400/6a4c93/ffffff?text=No+Image'">
+                                
+                                <div class="book-details">
+                                    <h5 class="book-title">${book.title}</h5>
+                                    <p class="book-author">
+                                        <i class="fas fa-user-edit me-1"></i>${book.author}
+                                    </p>
+                                    <p class="book-year">
+                                        <i class="fas fa-calendar-alt me-1"></i>${book.year}
+                                    </p>
+                                    
+                                    <div class="book-stats justify-content-center">
+                                        <span class="rating">
+                                            <i class="fas fa-fire me-1"></i>${book.similarity}% Match
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="text-center mt-3">
+                                        <button class="btn btn-outline-light btn-sm" 
+                                                onclick="getMoreRecommendations('${book.title}')"
+                                                title="Find books similar to this one">
+                                            <i class="fas fa-plus me-1"></i>More Like This
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="text-center mt-4">
+                    <div class="d-flex flex-wrap justify-content-center gap-3">
+                        <button class="btn search-btn" onclick="document.getElementById('bookSearch').focus(); document.getElementById('bookSearch').value = '';">
+                            <i class="fas fa-search me-2"></i>Search Another Book
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-light">
+                            <i class="fas fa-list me-2"></i>Browse Popular Books
+                        </a>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('recommendationsResults').innerHTML = recommendationsHtml;
+
+            // Scroll to results
+            document.getElementById('recommendationsResults').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        };
+    }
+    
+    // Function to get more recommendations
+    window.getMoreRecommendations = function(bookTitle) {
+        document.getElementById('bookSearch').value = bookTitle;
+        document.getElementById('searchBtn').click();
+    };
+});
+</script>
+{% endblock %}
