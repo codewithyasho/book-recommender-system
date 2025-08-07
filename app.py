@@ -8,16 +8,43 @@ import os
 app = Flask(__name__)
 
 # Load the pre-trained models and data
+import os
+import sys
+
+print("Current working directory:", os.getcwd())
+print("Files in current directory:", os.listdir('.'))
+
 try:
+    # Check if files exist
+    required_files = ['popular_books.csv', 'books.pkl', 'final_ratings_table.pkl', 'similarity_score.pkl']
+    missing_files = [f for f in required_files if not os.path.exists(f)]
+    
+    if missing_files:
+        print(f"Missing files: {missing_files}")
+        raise FileNotFoundError(f"Required data files not found: {missing_files}")
+    
     # Load data from current directory (since app.py is now in the same folder as data files)
+    print("Loading popular_books.csv...")
     popular_df = pd.read_csv('popular_books.csv')
+    print(f"Popular books loaded: {len(popular_df)} rows")
+    
+    print("Loading books.pkl...")
     books = joblib.load('books.pkl')
+    print(f"Books loaded: {len(books) if hasattr(books, '__len__') else 'unknown'}")
+    
+    print("Loading final_ratings_table.pkl...")
     final_ratings_table = joblib.load('final_ratings_table.pkl')
+    print(f"Ratings table loaded: {final_ratings_table.shape if hasattr(final_ratings_table, 'shape') else 'unknown'}")
+    
+    print("Loading similarity_score.pkl...")
     similarity_score = joblib.load('similarity_score.pkl')
+    print(f"Similarity scores loaded: {similarity_score.shape if hasattr(similarity_score, 'shape') else 'unknown'}")
 
     print("All data loaded successfully!")
+    
 except Exception as e:
     print(f"Error loading data: {e}")
+    print("Creating empty data structures...")
     # Create dummy data for testing
     popular_df = pd.DataFrame()
     books = pd.DataFrame()
@@ -70,6 +97,11 @@ def recommend_books(book_name):
 def index():
     """Landing page with popular books"""
     try:
+        # Check if popular_df has data
+        if popular_df.empty:
+            print("Warning: popular_df is empty!")
+            return render_template('index.html', books=[], error_message="Data not loaded properly")
+        
         # Convert popular_df to list of dictionaries for template
         popular_books = []
         for _, row in popular_df.iterrows():
@@ -82,10 +114,11 @@ def index():
                 'avg_rating': round(row['avg_rating'], 2)
             })
 
+        print(f"Sending {len(popular_books)} books to template")
         return render_template('index.html', books=popular_books)
     except Exception as e:
         print(f"Error in index route: {e}")
-        return render_template('index.html', books=[])
+        return render_template('index.html', books=[], error_message=str(e))
 
 
 @app.route('/recommend')
@@ -143,6 +176,20 @@ def search_books():
 
     except Exception as e:
         return jsonify([])
+
+
+@app.route('/debug')
+def debug():
+    """Debug route to check data loading status"""
+    debug_info = {
+        'cwd': os.getcwd(),
+        'files': os.listdir('.'),
+        'popular_df_shape': popular_df.shape if not popular_df.empty else "Empty",
+        'books_shape': books.shape if hasattr(books, 'shape') and not books.empty else "Empty", 
+        'ratings_shape': final_ratings_table.shape if hasattr(final_ratings_table, 'shape') and not final_ratings_table.empty else "Empty",
+        'similarity_shape': similarity_score.shape if hasattr(similarity_score, 'shape') and similarity_score.size > 0 else "Empty"
+    }
+    return jsonify(debug_info)
 
 
 if __name__ == '__main__':
