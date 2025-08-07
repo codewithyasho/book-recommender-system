@@ -29,16 +29,47 @@ try:
     print(f"Popular books loaded: {len(popular_df)} rows")
     
     print("Loading books.pkl...")
-    books = joblib.load('books.pkl')
-    print(f"Books loaded: {len(books) if hasattr(books, '__len__') else 'unknown'}")
+    try:
+        books = joblib.load('books.pkl')
+        print(f"Books loaded: {len(books) if hasattr(books, '__len__') else 'unknown'}")
+    except Exception as pkl_error:
+        print(f"Error loading books.pkl: {pkl_error}")
+        print("Attempting to recreate from CSV...")
+        try:
+            # Try to load from CSV and recreate the books dataframe
+            books_csv = pd.read_csv('Books.csv')
+            print(f"Loaded Books.csv with {len(books_csv)} rows")
+            books = books_csv[['ISBN', 'Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher', 'Image-URL-S', 'Image-URL-M', 'Image-URL-L']].copy()
+            books.columns = ['ISBN', 'Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher', 'Image-URL-S', 'Image-URL-M', 'Image-URL-L']
+            print(f"Recreated books dataframe: {len(books)} rows")
+        except Exception as csv_error:
+            print(f"Error loading from CSV: {csv_error}")
+            books = pd.DataFrame()
     
     print("Loading final_ratings_table.pkl...")
-    final_ratings_table = joblib.load('final_ratings_table.pkl')
-    print(f"Ratings table loaded: {final_ratings_table.shape if hasattr(final_ratings_table, 'shape') else 'unknown'}")
+    try:
+        final_ratings_table = joblib.load('final_ratings_table.pkl')
+        print(f"Ratings table loaded: {final_ratings_table.shape if hasattr(final_ratings_table, 'shape') else 'unknown'}")
+    except Exception as pkl_error:
+        print(f"Error loading final_ratings_table.pkl: {pkl_error}")
+        print("Attempting to recreate from CSV...")
+        try:
+            # Load the CSV file that should contain the ratings table
+            ratings_csv = pd.read_csv('final_ratings_table.csv')
+            final_ratings_table = ratings_csv
+            print(f"Recreated ratings table: {final_ratings_table.shape}")
+        except Exception as csv_error:
+            print(f"Error loading ratings CSV: {csv_error}")
+            final_ratings_table = pd.DataFrame()
     
     print("Loading similarity_score.pkl...")
-    similarity_score = joblib.load('similarity_score.pkl')
-    print(f"Similarity scores loaded: {similarity_score.shape if hasattr(similarity_score, 'shape') else 'unknown'}")
+    try:
+        similarity_score = joblib.load('similarity_score.pkl')
+        print(f"Similarity scores loaded: {similarity_score.shape if hasattr(similarity_score, 'shape') else 'unknown'}")
+    except Exception as pkl_error:
+        print(f"Error loading similarity_score.pkl: {pkl_error}")
+        print("Creating empty similarity matrix...")
+        similarity_score = np.array([])
 
     print("All data loaded successfully!")
     
@@ -55,6 +86,11 @@ except Exception as e:
 def recommend_books(book_name):
     """Recommend books based on similarity"""
     try:
+        # Check if we have the necessary data
+        if final_ratings_table.empty or similarity_score.size == 0:
+            print("Warning: Required data not available for recommendations")
+            return []
+        
         book_name = book_name.lower().strip()
 
         # Check if book exists in our dataset
